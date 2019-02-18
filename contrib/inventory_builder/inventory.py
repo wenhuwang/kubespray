@@ -41,7 +41,7 @@ import re
 import sys
 
 ROLES = ['all', 'kube-master', 'kube-node', 'etcd', 'k8s-cluster:children',
-         'calico-rr', 'vault']
+         'calico-rr']
 PROTECTED_NAMES = ROLES
 AVAILABLE_COMMANDS = ['help', 'print_cfg', 'print_ips', 'load']
 _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
@@ -81,6 +81,7 @@ class KubesprayInventory(object):
         self.ensure_required_groups(ROLES)
 
         if changed_hosts:
+            changed_hosts = self.range2ips(changed_hosts)
             self.hosts = self.build_hostnames(changed_hosts)
             self.purge_invalid_hosts(self.hosts.keys(), PROTECTED_NAMES)
             self.set_all(self.hosts)
@@ -179,6 +180,26 @@ class KubesprayInventory(object):
 
         return all_hosts
 
+    def range2ips(self, hosts):
+        from ipaddress import ip_address
+        reworked_hosts = []
+
+        def ips(start_address, end_address):
+            start = int(ip_address(start_address).packed.hex(), 16)
+            end = int(ip_address(end_address).packed.hex(), 16)
+            return [ip_address(ip).exploded for ip in range(start, end+1)]
+
+        for host in hosts:
+            if '-' in host and not host.startswith('-'):
+                start, end = host.strip().split('-')
+                try:
+                    reworked_hosts.extend(ips(start, end))
+                except ValueError:
+                    raise Exception("Range of ip_addresses isn't valid")
+            else:
+                reworked_hosts.append(host)
+        return reworked_hosts
+
     def exists_hostname(self, existing_hosts, hostname):
         return hostname in existing_hosts.keys()
 
@@ -250,7 +271,6 @@ class KubesprayInventory(object):
     def set_etcd(self, hosts):
         for host in hosts:
             self.add_host_to_group('etcd', host)
-            self.add_host_to_group('vault', host)
 
     def load_file(self, files=None):
         '''Directly loads JSON, or YAML file to inventory.'''
