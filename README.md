@@ -111,17 +111,17 @@ Supported Components
 --------------------
 
 -   Core
-    -   [kubernetes](https://github.com/kubernetes/kubernetes) v1.13.3
+    -   [kubernetes](https://github.com/kubernetes/kubernetes) v1.13.0
     -   [etcd](https://github.com/coreos/etcd) v3.2.24
     -   [docker](https://www.docker.com/) v18.06 (see note)
     -   [rkt](https://github.com/rkt/rkt) v1.21.0 (see Note 2)
     -   [cri-o](http://cri-o.io/) v1.11.5 (experimental: see [CRI-O Note](docs/cri-o.md). Only on centos based OS)
 -   Network Plugin
-    -   [calico](https://github.com/projectcalico/calico) v3.4.0
+    -   [calico](https://github.com/projectcalico/calico) v3.1.3
     -   [canal](https://github.com/projectcalico/canal) (given calico/flannel versions)
     -   [cilium](https://github.com/cilium/cilium) v1.3.0
     -   [contiv](https://github.com/contiv/install) v1.2.1
-    -   [flanneld](https://github.com/coreos/flannel) v0.11.0
+    -   [flanneld](https://github.com/coreos/flannel) v0.10.0
     -   [kube-router](https://github.com/cloudnativelabs/kube-router) v0.2.1
     -   [multus](https://github.com/intel/multus-cni) v3.1.autoconf
     -   [weave](https://github.com/weaveworks/weave) v2.5.0
@@ -141,7 +141,7 @@ plugins can be deployed for a given single cluster.
 Requirements
 ------------
 
--   **Ansible v2.6 (or newer) and python-netaddr is installed on the machine
+-   **Ansible v2.5 (or newer) and python-netaddr is installed on the machine
     that will run Ansible commands**
 -   **Jinja 2.9 (or newer) is required to run the Ansible Playbooks**
 -   The target servers must have **access to the Internet** in order to pull docker images. Otherwise, additional configuration is required (See [Offline Environment](https://github.com/kubernetes-sigs/kubespray/blob/master/docs/downloads.md#offline-environment))

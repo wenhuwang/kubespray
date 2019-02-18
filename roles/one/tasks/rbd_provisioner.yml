@@ -1,0 +1,67 @@
+---
+- name: Install ceph-common packages
+  yum: name=ceph-common state=present
+
+- name: Write ceph secret files
+  copy: 
+    src: "{{ item }}"
+    dest: /tmp/
+  with_items:
+    - admin-secret
+    - client-secret
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Create ceph secret
+  shell: "kubectl create  secret generic {{ item.name }} --from-file={{ item.file }} --namespace=kube-system"
+  with_items:
+    - { name: ceph-admin-secret, file: /tmp/admin-secret }
+    - { name: ceph-secret, file: /tmp/client-secret }
+  when: 
+    - inventory_hostname == groups['kube-master'][0]
+  ignore_errors: yes
+
+- name: Remove legacy addon dir and manifests
+  file:
+    path: "{{ kube_config_dir }}/addons/rbd-provisioner"
+    state: absent
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Create addon dir
+  file:
+    path: "{{ kube_config_dir }}/addons/rbd-provisioner"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Create ceph rbd rbac template
+  template:
+    src: "{{ item.file }}.j2"
+    dest: "{{ kube_config_dir }}/addons/rbd-provisioner/{{ item.file }}"
+  with_items:
+    - { name: rbd-provisioner, file: clusterrolebinding.yaml, type: clusterrolebinding }
+    - { name: rbd-provisioner, file: clusterrole.yaml, type: clusterrole }
+    - { name: rbd-provisioner, file: deployment.yaml, type: deploy }
+    - { name: rbd-provisioner, file: rolebinding.yaml, type: rolebinding }
+    - { name: rbd-provisioner, file: role.yaml, type: role }
+    - { name: rbd-provisioner, file: serviceaccount.yaml, type: sa }
+    - { name: rbd, file: class.yaml, type: StorageClass }
+  register: rbd_manifests
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Apply manifests
+  kube:
+    name: "{{ item.item.name }}"
+    kubectl: "{{ bin_dir }}/kubectl"
+    namespace: "kube-system"
+    resource: "{{ item.item.type }}"
+    filename: "{{ kube_config_dir }}/addons/rbd-provisioner/{{ item.item.file }}"
+    state: "latest"
+  with_items: "{{ rbd_manifests.results }}"
+  when:
+    - inventory_hostname == groups['kube-master'][0]

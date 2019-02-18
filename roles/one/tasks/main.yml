@@ -1,0 +1,15 @@
+---
+# tasks file for one
+
+- name: Config rbd volume provisioner
+  include_tasks: rbd_provisioner.yml
+
+- name: Install one related component
+  include_tasks: install_component.yml
+  when:
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Init one releated component
+  include_tasks: init_component.yml
+  when:
+    - inventory_hostname == groups['kube-master'][0]

@@ -1,0 +1,28 @@
+---
+- name: Create mysql config files
+  copy:
+    src: mysql-values.yaml
+    dest: "{{ kube_config_dir }}/addons/one"
+
+- name: Install mysql deployment
+  shell: "helm install --name mysql-dev mysql-0.10.1.tgz --namespace {{ one_namespace}} -f mysql-values.yaml"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Test mysql container status is running
+  shell: "kubectl -n {{ one_namespace}} get po -l app=mysql -o=custom-columns=:.status.containerStatuses[0].ready | grep -v '^$'"
+  register: mysql_status
+  until: mysql_status.stdout == "true"
+  retries: 20
+  delay: 15
+
+- name: Initialize databases
+  shell: 'kubectl -n {{ one_namespace}} exec -it $(kubectl -n {{ one_namespace}} get po -l app=mysql -o=custom-columns=NAME:.metadata.name | grep mysql ) --  mysql -uroot -p{{ mysql_password }} -e "create database \`{{ item }}\`"'
+  with_items:
+    - one-cicd
+    - one-user
+    - one-container
+  register: init_status
+  until: init_status.rc == 0
+  retries: 5
+  delay: "{{ retry_stagger | random + 3 }}"

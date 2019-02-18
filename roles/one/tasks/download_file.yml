@@ -1,0 +1,29 @@
+---
+- name: Remove legacy addon dir and manifests
+  file:
+    path: "{{ kube_config_dir }}/addons/one"
+    state: absent
+
+- name: Create addon dir
+  file:
+    path: "{{ kube_config_dir }}/addons/one"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: file_download | Download helm packages
+  get_url:
+    url: "http://192.168.206.1/helm/{{ item }}.tgz"
+    dest: "{{ kube_config_dir }}/addons/one/"
+  with_items:
+    - harbor
+    - heapster-0.3.0
+    - mysql-0.10.1
+    - onecloud-0.1.1
+    - rabbitmq-1.1.2
+    - redis-3.7.6
+    - sonarqube-0.9.0
+  register: get_url_result
+  until: "'OK' in get_url_result.msg or 'file already exists' in get_url_result.msg"
+  retries: 4

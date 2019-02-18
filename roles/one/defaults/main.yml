@@ -1,0 +1,18 @@
+---
+# defaults file for one
+one_namespace: onecloud
+
+jenkins_nodeport: 30080
+jenkins_namespace: "{{ one_namespace }}"
+
+harbor_nodeport: 30002
+harbor_namespace: "{{ one_namespace }}"
+
+cicd_nodeport: 30010
+user_nodeport: 30011
+
+mysql_password: Abcd1234
+redis_password: Abcd1234
+
+#rbd_provisioner_monitors: 192.168.205.39:6789,192.168.205.91:6789
+rbd_provisioner_monitors: 192.168.206.11:6789,192.168.206.12:6789,192.168.206.13:6789

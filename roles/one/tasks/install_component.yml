@@ -1,0 +1,48 @@
+---
+- name: Download helm packages
+  include_tasks: download_file.yml
+
+- name: Install mysql 
+  include_tasks: mysql.yml
+
+- name: Install harbor
+  shell: "helm install --name harbor --namespace {{ harbor_namespace}} harbor.tgz --set expose.nodePort.ports.http.nodePort={{ harbor_nodeport }}"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Create jenkins manifests
+  template:
+    src: jenkins.yaml.j2
+    dest: "{{ kube_config_dir }}/addons/one/jenkins.yaml"
+
+- name: Create jenkins resources
+  kube:
+    kubectl: "{{ bin_dir }}/kubectl"
+    namespace: "{{ one_namespace}}"
+    filename: "{{ kube_config_dir }}/addons/one/jenkins.yaml"
+    state: "latest" 
+
+- name: Install Sonarqube
+  shell: "helm install sonarqube-0.9.0.tgz --name sonarqube --set nameOverride=sonarqube,persistence.enabled=true,persistence.storageClass=rbd,persistence.accessMode=ReadWriteOnce,persistence.size=10Gi,database.type=mysql,postgresql.enabled=false,mysql.mysqlServer=mysql,mysql.mysqlUser=root,mysql.mysqlPassword={{ mysql_password }},mysql.mysqlDatabase=sonarDB,ingress.enabled=true,ingress.hosts[0]=sonarqube.test.onetest.newtouch.com  --namespace {{ one_namespace}}"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Install redis
+  shell: "helm install redis-3.7.6.tgz --name redis --namespace {{ one_namespace}} --set cluster.enabled=false,password={{ redis_password }},master.persistence.enabled=false"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Install heapster
+  shell: "helm install --name heapster heapster-0.3.0.tgz --namespace=kube-system --set image.repository=registry.onetest.newtouch.com/google_containers/heapster,rbac.create=true,resizer.image.repository=registry.onetest.newtouch.com/google_containers/addon-resizer"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Install rabbitmq
+  shell: "helm install  rabbitmq-1.1.2.tgz --name rabbitmq --namespace {{ one_namespace}} --set rabbitmq.password=password"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"
+
+- name: Install onecloud
+  shell: "helm install onecloud-0.1.1.tgz --name onecloud --namespace {{ one_namespace}} --set ingress.web=web.test.onetest.newtouch.com,ingress.user=user-web.test.onetest.newtouch.com"
+  args:
+    chdir: "{{ kube_config_dir }}/addons/one"

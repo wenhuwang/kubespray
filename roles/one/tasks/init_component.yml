@@ -1,0 +1,61 @@
+---
+- name: Create dashboard rbac config files
+  template:
+    src: kubernetes-dashboard-admin.rbac.yaml.j2
+    dest: "{{ kube_config_dir }}/addons/one/kubernetes-dashboard-admin.rbac.yaml"
+
+- name: Create dashboard rbac resources
+  kube:
+    kubectl: "{{ bin_dir }}/kubectl"
+    filename: "{{ kube_config_dir }}/addons/one/kubernetes-dashboard-admin.rbac.yaml"
+    state: "latest"
+
+- name: Setup dashboard admin token
+  shell: "kubectl -n kube-system describe  $(kubectl -n kube-system get secret --no-headers=false -o name | grep kubernetes-dashboard-admin) | grep -E '^token' | awk '{print $2}'"
+  register: dashboard_token
+
+- name: Setup client cert data
+  shell: "cat ~/.kube/config  | grep client-certificate-data | awk '{print $2}'"
+  register: client_cert_data
+
+- name: Setup client key data
+  shell: "cat ~/.kube/config  | grep client-key-data | awk '{print $2}'"
+  register: client_key_data
+
+- name: Setup sonarqube nodeport
+  shell: "kubectl -n {{ one_namespace }} get svc -l app=sonarqube -o=custom-columns=:.spec.ports[0].nodePort | grep -v '^$'"
+  register: sonar_nodeport
+
+- name: Setup sonarqube token 
+  shell: "curl -u admin:admin -X POST -d 'name=test' http://{{ ip }}:{{ sonar_nodeport.stdout }}/api/user_tokens/generate"
+  register: sonar_user_info
+  until: sonar_user_info.rc == 0
+  retries: 5
+  delay: "{{ retry_stagger | random + 3 }}"
+  ignore_errors: yes
+
+- name: Setup docker registry secret
+  shell: "kubectl create secret docker-registry test --docker-server=http://{{ ip }}:{{ harbor_nodeport }} --docker-username=admin --docker-password=Accp1234 --docker-email=admin@example.com"
+  register: registry_status
+
+- name: Setup docker registry configjson
+  shell: "kubectl get secret test  -o yaml  | grep dockerconfigjson: | awk '{print $2}'"
+  when: registry_status.rc == 0 
+  register: dockerconfigjson
+
+- set_fact:
+    dashboard_token_result: "{{ dashboard_token.stdout }}"
+
+- set_fact:
+    client_cert_data_result: "{{ client_cert_data.stdout }}"
+
+- set_fact:
+    client_key_data_result: "{{ client_key_data.stdout }}"
+
+- set_fact:
+    sonar_user_token: "{{ sonar_user_info.stdout.token | default(None) }}"
+
+- name: Generate init mysql script
+  template:
+    src: mysql_init.sh.j2
+    dest: /opt/mysql_init.sh

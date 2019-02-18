@@ -1,0 +1,61 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: {{ jenkins_namespace}}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        user: jenkins
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: 172.20.5.34/wangwenhu/jenkins:v2
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /var/jenkins_home
+          name: data
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: jenkins
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+  namespace: {{ jenkins_namespace }}
+  labels:
+    user: jenkins
+spec:
+  selector:
+    app: jenkins
+  ports:
+  - port: 8080
+    nodePort: {{ jenkins_nodeport }}
+  type: NodePort
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: jenkins
+  namespace: {{ jenkins_namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: rbd
+  resources:
+    requests:
+      storage: 10Gi
