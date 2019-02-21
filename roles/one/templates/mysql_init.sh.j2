@@ -3,13 +3,12 @@
 # Init databases for onecloud 
 
 # Define log file
-TIMESTAMP=`date+%Y%m%d%H%M%S`
+TIMESTAMP=`date +%Y%m%d%H%M%S`
 LOG=/tmp/onecloud_mysql_init_${TIMESTAMP}.log
 echo "Start execute sql for init databases for onecloud statement at `date`.">>${LOG}
 
 # execute sql stat
-kubectl -n onecloud exec -it $(kubectl -n onecloud get po -l app=mysql -o=custom-columns=NAME:.metadata.name | grep mysql ) --  mysql -uroot -p{{ mysql_password }} -e "
-tee /tmp/temp.log
+kubectl -n onecloud exec -it $(kubectl -n onecloud get po -l app=mysql -o=custom-columns=NAME:.metadata.name | grep mysql ) --  mysql -uroot -p{{ mysql_password }} -e '
 
 delete from `one-container`.cicd_kubernetes_resource where ID=9999;
 update `one-container`.cicd_kubernetes_resource set K8S_url="{{ ip }}:{{ kube_apiserver_port }}",KEY_DATA="{{ client_key_data_result }}",CERT_DATA="{{ client_cert_data_result }}",TOKEN="{{ dashboard_token_result }}" where ID=8888;
@@ -24,12 +23,11 @@ update `one-user`.sso_permission set ROUTE="{{ ip }}:{{ cicd_nodeport }}" where 
 update `one-user`.sso_permission set ROUTE="{{ ip }}:{{ user_nodeport }}" where PERMISSION_CODE="USER";
 update `one-cicd`.cicd_parameter set _VALUE="{{ dockerconfigjson.stdout }}" where _KEY="DEFAULT_PULL_SECRET";
 
-notee
 quit
-"
+' | tee /tmp/temp.log
 
 echo -e "\n" >> ${LOG}
 echo "below is output result.">>${LOG}
-cat /tmp/temp.log>>${LOG}
+cat /tmp/temp.log>>${LOG} | rm -f /tmp/temp.log
 echo "script executed successful.">>${LOG}
 exit;
