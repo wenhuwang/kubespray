@@ -4,6 +4,7 @@ one_namespace: onecloud
 
 one_image_repo: 172.20.5.34/one
 harbor_image_repo: 172.20.5.34/goharbor
+packages_repo: http://172.20.5.34:8080/packages
 
 jenkins_nodeport: 30080
 jenkins_namespace: "{{ one_namespace }}"

@@ -14,7 +14,7 @@
 
 - name: file_download | Download helm packages
   get_url:
-    url: "http://192.168.206.1/helm/{{ item }}.tgz"
+    url: "{{ packages_repo }}/helm/{{ item }}.tgz"
     dest: "{{ kube_config_dir }}/addons/one/"
   with_items:
     - harbor
