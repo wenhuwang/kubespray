@@ -34,6 +34,7 @@ docker_rpm_keepcache: 0
 ## example define 172.19.16.11 or mirror.registry.io
 docker_insecure_registries:
    - 172.20.5.34
+   - "{{ hostvars[groups['kube-master'][0]]['ansible_host'] }}:30002"
 
 ## Add other registry,example China registry mirror.
 #docker_registry_mirrors:

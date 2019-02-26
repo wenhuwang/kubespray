@@ -1,8 +1,8 @@
 ---
 - name: Create mysql config files
-  copy:
-    src: mysql-values.yaml
-    dest: "{{ kube_config_dir }}/addons/one"
+  template:
+    src: mysql-values.yaml.j2
+    dest: "{{ kube_config_dir }}/addons/one/mysql-values.yaml"
 
 - name: Install mysql deployment
   shell: "helm install --name mysql-dev mysql-0.10.1.tgz --namespace {{ one_namespace}} -f mysql-values.yaml"
